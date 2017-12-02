@@ -23,11 +23,11 @@ extern "C"{
 
 #include "poly.h"
 
-#define POLYNUM int(sizeof(polyvec)/sizeof(polyvec[0]))
+#define POLYNUM int(sizeof(faces)/sizeof(faces[0]))
 #define POINTNUM int(sizeof(pointvec)/sizeof(pointvec[0]))
 #define WIRENUM int(sizeof(wireframe)/sizeof(wireframe[0]))
 
-#define MAXPROC_POLYNUM (POLYNUM*2/3)
+#define MAXPROC_POLYNUM (POLYNUM)
 
 vector3 pv[12][3];
 
@@ -48,7 +48,7 @@ float loadPower(const fvector3 &light_pos,const fvector3 &light_n,const fvector4
   return cos_cross;// * light_obj_dist/65536;
 }
 
-const int SIZE_TEX = 256;
+const int SIZE_TEX = 512;
 
 fvector4 obj_transed[POINTNUM];
 fvector4 poly_transed[POINTNUM];
@@ -76,7 +76,7 @@ int main3d(void){
   Matrix4 obj;
 
   //透視投影行列
-  projection=loadPerspective(0.25f,float(window_height)/window_width,0.0001f,3.f,0,0)*projection;
+  projection=loadPerspective(0.25f,float(window_height)/window_width,0.01f,100.f,0,0)*projection;
 
   fvector3 viewdir;
   fvector3 veye;
@@ -103,19 +103,10 @@ int main3d(void){
         tnum = 0;
     np.x+=5.f; 
     //視点計算
-#if 0&&MODEL == 1
-    dist = 2.5f;// + 1.4f*cosf(np.x/150.f*3.14159265358979324f);
+    dist = 90.5f;// + 1.4f*cosf(np.x/150.f*3.14159265358979324f);
     m=projection*lookat(fvector3(0,0,0),veye*dist)*obj*translation(fvector3(0,-0.3,0));
-#else
-    dist = 3.f + 1.5f*cosf(np.x/150.f*3.14159265358979324f);
-#endif
     veye = -fvector3(cosf(np.x/300.f*3.14159265f)*cosf(np.y/300.f*3.14159265f),sinf(np.y/300.f*3.14159265f),sinf(np.x/300.f*3.14159265f)*cosf(np.y/300.f*3.14159265f));
     //透視投影行列とカメラ行列の合成
-#if MODEL <= 3
-    m=projection*lookat(fvector3(0,0,0),veye*dist)*obj*translation(fvector3(0,-0.3,0));
-#else
-    m=projection*lookat(fvector3(0,0,0),veye*dist)*obj*translation(fvector3(0,0,-0.7));
-#endif
     //頂点データを変換
     for(int j=0;j<POINTNUM;j++){
       obj_transed[j] = fvector4(pointvec[j].x,pointvec[j].y,pointvec[j].z);
@@ -124,8 +115,8 @@ int main3d(void){
     //ポリゴンデータの生成
     for(int i=0;i<POLYNUM;i++){
       for(int j=0;j<3;j++){
-	v[j] = poly_transed[polyvec[i][j]];
-	vo[j] = obj_transed[polyvec[i][j]];
+	v[j] = poly_transed[faces[i].vertex[j].vidx-1];
+	vo[j] = obj_transed[faces[i].vertex[j].vidx-1];
       }
 
       //簡易1次クリッピング
@@ -138,18 +129,18 @@ int main3d(void){
 	   !((abs(v[2].x) > 1.f)||(abs(v[2].y) > 1.f)||(abs(v[2].z) < 0.f))))
 	continue;
       //クリップ座標系からディスプレイ座標系の変換
-      v[0].x=v[0].x*window_width+window_width*0.5;v[0].y=v[0].y*window_height+window_height*0.5;
-      v[1].x=v[1].x*window_width+window_width*0.5;v[1].y=v[1].y*window_height+window_height*0.5;
-      v[2].x=v[2].x*window_width+window_width*0.5;v[2].y=v[2].y*window_height+window_height*0.5;
+      v[0].x=v[0].x*(window_width*1.25f)+window_width*0.5;v[0].y=v[0].y*window_height+window_height*0.5;
+      v[1].x=v[1].x*(window_width*1.25f)+window_width*0.5;v[1].y=v[1].y*window_height+window_height*0.5;
+      v[2].x=v[2].x*(window_width*1.25f)+window_width*0.5;v[2].y=v[2].y*window_height+window_height*0.5;
 
       //テクスチャのデータ
       const texture_t tex={
-    	stonetex,vector2(4,4)
+    	texture,vector2(4,4)
       };
       fvector2 puv[3];
       for(int j=0;j<3;j++){
-	puv[j].x = (1.f-point_uv[polyvec[i][j]].x)*SIZE_TEX;
-	puv[j].y = (point_uv[polyvec[i][j]].y)*SIZE_TEX;
+	puv[j].x = (point_uv[faces[i].vertex[j].vuvidx-1].x)*SIZE_TEX;
+	puv[j].y = (point_uv[faces[i].vertex[j].vuvidx-1].y)*SIZE_TEX;
       }
       //光量の計算
       float light = loadPower(fvector3(),veye,vo);
@@ -170,7 +161,7 @@ int main3d(void){
     for(int y=0;y<window_height/DRAW_NLINES;y++){
       for(int i=0;i<window_width*DRAW_NLINES;i++){
 	    zlinebuf[i]=1.f;
-	    drawbuff[i]=0;/*RGB*/
+	    drawbuff[i]=0x0;/*RGB*/
       }
       for(int i=0;i<tnum;i++){
 #if ZSORT
@@ -182,9 +173,12 @@ int main3d(void){
 #endif
 	}
       }
-    for(int i=0;i<window_width*DRAW_NLINES;i++){
-        (VRAM+y*DRAW_NLINES*window_width)[i] = drawbuff[i];
-    }
+
+    for(int j=0;j<DRAW_NLINES;j++){
+            for(int i=0;i<window_width;i++){
+                (VRAM+(j+y*DRAW_NLINES)*X_RES)[i] = drawbuff[i+j*window_width];
+            }
+        }
     }
   }
 }

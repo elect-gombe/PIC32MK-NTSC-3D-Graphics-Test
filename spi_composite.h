@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#define X_RES	320 // Graphic横方向解像度
-#define Y_RES	216 // Graphic縦方向解像度
+#define X_RES	200 // Graphic横方向解像度
+#define Y_RES	200 // Graphic縦方向解像度
 
 extern uint16_t VRAM[]; // Graphicビデオメモリ
 extern volatile int drawcount;	//　1画面表示終了ごとに1足す。アプリ側で0にする。

@@ -17,6 +17,7 @@
       <itemPath>vector2.hpp</itemPath>
       <itemPath>vector3.hpp</itemPath>
       <itemPath>vector4.hpp</itemPath>
+      <itemPath>3dconfig.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
